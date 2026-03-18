@@ -14,16 +14,255 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      models: {
+        Row: {
+          class_levels: number[] | null
+          created_at: string
+          file_format: string
+          file_size_bytes: number | null
+          file_url: string
+          id: string
+          keywords_en: string[] | null
+          keywords_hi: string[] | null
+          keywords_ne: string[] | null
+          license: string | null
+          name: string
+          named_parts: string[] | null
+          ncert_chapters: string[] | null
+          quality_rating: number | null
+          slug: string
+          source: string | null
+          status: string
+          subject: string
+          tier: number
+          updated_at: string
+          uploaded_by: string | null
+          viral_score: number | null
+        }
+        Insert: {
+          class_levels?: number[] | null
+          created_at?: string
+          file_format?: string
+          file_size_bytes?: number | null
+          file_url: string
+          id?: string
+          keywords_en?: string[] | null
+          keywords_hi?: string[] | null
+          keywords_ne?: string[] | null
+          license?: string | null
+          name: string
+          named_parts?: string[] | null
+          ncert_chapters?: string[] | null
+          quality_rating?: number | null
+          slug: string
+          source?: string | null
+          status?: string
+          subject?: string
+          tier?: number
+          updated_at?: string
+          uploaded_by?: string | null
+          viral_score?: number | null
+        }
+        Update: {
+          class_levels?: number[] | null
+          created_at?: string
+          file_format?: string
+          file_size_bytes?: number | null
+          file_url?: string
+          id?: string
+          keywords_en?: string[] | null
+          keywords_hi?: string[] | null
+          keywords_ne?: string[] | null
+          license?: string | null
+          name?: string
+          named_parts?: string[] | null
+          ncert_chapters?: string[] | null
+          quality_rating?: number | null
+          slug?: string
+          source?: string | null
+          status?: string
+          subject?: string
+          tier?: number
+          updated_at?: string
+          uploaded_by?: string | null
+          viral_score?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          role_default: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          role_default?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          role_default?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      simulation_cache: {
+        Row: {
+          ai_response: Json
+          created_at: string
+          id: string
+          language: string
+          model_id: string
+          serve_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          ai_response: Json
+          created_at?: string
+          id?: string
+          language?: string
+          model_id: string
+          serve_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ai_response?: Json
+          created_at?: string
+          id?: string
+          language?: string
+          model_id?: string
+          serve_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_cache_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_analytics: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: string
+          language: string | null
+          last_step_viewed: number | null
+          model_id: string | null
+          query_text: string | null
+          session_duration_ms: number | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          language?: string | null
+          last_step_viewed?: number | null
+          model_id?: string | null
+          query_text?: string | null
+          session_duration_ms?: number | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          language?: string | null
+          last_step_viewed?: number | null
+          model_id?: string | null
+          query_text?: string | null
+          session_duration_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_analytics_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_library: {
+        Row: {
+          created_at: string
+          id: string
+          last_step: number | null
+          model_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_step?: number | null
+          model_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_step?: number | null
+          model_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_library_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +389,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "student"],
+    },
   },
 } as const
