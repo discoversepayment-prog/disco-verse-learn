@@ -313,17 +313,21 @@ export function LearnView() {
             .eq("language", "en")
             .maybeSingle();
 
+          const normalizedJson = normalized as unknown as Json;
+
           if (existingCache?.id) {
             await supabase
               .from("simulation_cache")
-              .update({ ai_response: normalized, updated_at: new Date().toISOString() })
+              .update({ ai_response: normalizedJson, updated_at: new Date().toISOString() })
               .eq("id", existingCache.id);
           } else {
-            await supabase.from("simulation_cache").insert({
-              model_id: model.id,
-              language: "en",
-              ai_response: normalized,
-            });
+            await supabase.from("simulation_cache").insert([
+              {
+                model_id: model.id,
+                language: "en",
+                ai_response: normalizedJson,
+              },
+            ]);
           }
         }
       }
