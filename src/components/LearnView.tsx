@@ -8,6 +8,7 @@ import { ModelViewer } from "./ModelViewer";
 import { useApp } from "@/contexts/AppContext";
 import { useTTS } from "@/hooks/useTTS";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { Progress } from "@/components/ui/progress";
 
 interface SimStep {
