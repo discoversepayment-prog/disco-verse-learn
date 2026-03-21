@@ -192,7 +192,18 @@ export function LearnView() {
 
     setLoadingProgress(30);
     if (model?.file_url) { setModelUrl(model.file_url); }
-    else { setModelUrl(null); }
+    else {
+      // No model in DB — generate an AI image as fallback visual
+      setModelUrl(null);
+      try {
+        const { data: imgData, error: imgErr } = await supabase.functions.invoke("generate-model-image", {
+          body: { topic: t },
+        });
+        if (!imgErr && imgData?.imageUrl) {
+          setModelUrl(imgData.imageUrl);
+        }
+      } catch { /* continue without image */ }
+    }
 
     let effectiveNamedParts: string[] = model?.named_parts?.length ? model.named_parts : [];
     if (!effectiveNamedParts.length && model?.file_url?.toLowerCase().endsWith(".glb")) {
