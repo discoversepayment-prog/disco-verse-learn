@@ -5,11 +5,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/contexts/AppContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import Index from "./pages/Index.tsx";
-import Library from "./pages/Library.tsx";
-import Admin from "./pages/Admin.tsx";
-import Auth from "./pages/Auth.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import Landing from "./pages/Landing";
+import Index from "./pages/Index";
+import Library from "./pages/Library";
+import Profile from "./pages/Profile";
+import Admin from "./pages/Admin";
+import Auth from "./pages/Auth";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -29,8 +31,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/app" replace />;
   return <>{children}</>;
+}
+
+function LandingRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user) return <Navigate to="/app" replace />;
+  return <Landing />;
 }
 
 const App = () => (
@@ -42,11 +51,12 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/" element={<LandingRoute />} />
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-              <Route path="/admin/agents" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/admin/*" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

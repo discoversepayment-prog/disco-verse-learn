@@ -1,0 +1,225 @@
+import { useState, useEffect } from "react";
+import { MainLayout } from "@/components/MainLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { User, Mail, Link2, Copy, Check, LogOut, Shield, Save } from "lucide-react";
+import { toast } from "sonner";
+
+export default function Profile() {
+  const { user, isAdmin, signOut } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [form, setForm] = useState({ display_name: "", username: "", bio: "" });
+  const [stats, setStats] = useState({ simulations: 0, chats: 0 });
+
+  useEffect(() => {
+    if (!user) return;
+    loadProfile();
+    loadStats();
+  }, [user]);
+
+  const loadProfile = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", user!.id)
+      .maybeSingle();
+    if (data) {
+      setProfile(data);
+      setForm({
+        display_name: data.display_name || "",
+        username: data.username || "",
+        bio: data.bio || "",
+      });
+    }
+    setLoading(false);
+  };
+
+  const loadStats = async () => {
+    const { count: libCount } = await supabase
+      .from("user_library")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user!.id);
+    setStats({ simulations: libCount || 0, chats: 0 });
+  };
+
+  const saveProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    const username = form.username.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    const shareUrl = `${window.location.origin}/u/${username}`;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        display_name: form.display_name,
+        username: username || null,
+        bio: form.bio || null,
+        share_url: username ? shareUrl : null,
+      })
+      .eq("user_id", user.id);
+
+    if (error) {
+      if (error.code === "23505") toast.error("Username already taken");
+      else toast.error("Failed to save");
+    } else {
+      toast.success("Profile updated!");
+      loadProfile();
+    }
+    setSaving(false);
+  };
+
+  const copyShareLink = () => {
+    const url = profile?.share_url || `${window.location.origin}/u/${form.username}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast.success("Link copied!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (loading) {
+    return (
+      <MainLayout title="Profile">
+        <div className="flex items-center justify-center h-full">
+          <div className="w-6 h-6 border-2 border-border border-t-accent rounded-full animate-spin" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const avatarUrl = user?.user_metadata?.avatar_url;
+  const displayName = form.display_name || user?.email?.split("@")[0] || "Explorer";
+
+  return (
+    <MainLayout title="Profile">
+      <div className="p-5 md:p-8 overflow-y-auto h-full pb-20 md:pb-8 max-w-xl mx-auto">
+        {/* Avatar & header */}
+        <div className="flex flex-col items-center text-center mb-8">
+          {avatarUrl ? (
+            <img src={avatarUrl} className="w-20 h-20 rounded-full object-cover border-2 border-border mb-3" alt="" />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mb-3">
+              <User size={32} strokeWidth={1.5} className="text-accent" />
+            </div>
+          )}
+          <h1 className="text-[20px] font-semibold text-primary-custom">{displayName}</h1>
+          <p className="text-[13px] text-tertiary-custom">{user?.email}</p>
+          {isAdmin && (
+            <span className="inline-flex items-center gap-1 text-[11px] bg-accent/10 text-accent px-2.5 py-0.5 rounded-full mt-2 font-medium">
+              <Shield size={10} /> Admin
+            </span>
+          )}
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-card border border-border rounded-xl p-4 text-center">
+            <p className="text-[22px] font-semibold text-primary-custom">{stats.simulations}</p>
+            <p className="text-[11px] text-tertiary-custom mt-0.5">Simulations Saved</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 text-center">
+            <p className="text-[22px] font-semibold text-primary-custom">{stats.chats}</p>
+            <p className="text-[11px] text-tertiary-custom mt-0.5">Chat Sessions</p>
+          </div>
+        </div>
+
+        {/* Edit form */}
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="text-[12px] font-medium text-primary-custom block mb-1">Display Name</label>
+            <div className="relative">
+              <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-custom" />
+              <input
+                value={form.display_name}
+                onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+                className="w-full bg-card border border-border rounded-xl h-10 pl-9 pr-3 text-[13px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent transition-colors"
+                placeholder="Your name"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[12px] font-medium text-primary-custom block mb-1">Username</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-custom text-[13px]">@</span>
+              <input
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "") })}
+                className="w-full bg-card border border-border rounded-xl h-10 pl-8 pr-3 text-[13px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent transition-colors"
+                placeholder="username"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[12px] font-medium text-primary-custom block mb-1">Bio</label>
+            <textarea
+              value={form.bio}
+              onChange={(e) => setForm({ ...form, bio: e.target.value })}
+              rows={3}
+              className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-[13px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent transition-colors resize-none"
+              placeholder="A little about yourself..."
+            />
+          </div>
+
+          {/* Share link */}
+          {form.username && (
+            <div>
+              <label className="text-[12px] font-medium text-primary-custom block mb-1">Share Link</label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-background-secondary border border-border rounded-xl h-10 px-3 flex items-center">
+                  <Link2 size={13} className="text-tertiary-custom mr-2 shrink-0" />
+                  <span className="text-[12px] text-secondary-custom truncate">
+                    {window.location.origin}/u/{form.username}
+                  </span>
+                </div>
+                <button
+                  onClick={copyShareLink}
+                  className="w-10 h-10 bg-card border border-border rounded-xl flex items-center justify-center hover:bg-background-secondary transition-colors shrink-0"
+                >
+                  {copied ? <Check size={14} className="text-accent" /> : <Copy size={14} className="text-tertiary-custom" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={saveProfile}
+            disabled={saving}
+            className="w-full bg-accent text-accent-foreground h-10 rounded-xl text-[13px] font-medium hover:opacity-90 active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <Save size={14} />
+            {saving ? "Saving..." : "Save Profile"}
+          </button>
+        </div>
+
+        {/* Account info */}
+        <div className="border-t border-border pt-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <Mail size={14} className="text-tertiary-custom" />
+            <div>
+              <p className="text-[12px] text-tertiary-custom">Email</p>
+              <p className="text-[13px] text-primary-custom">{user?.email}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <User size={14} className="text-tertiary-custom" />
+            <div>
+              <p className="text-[12px] text-tertiary-custom">Member since</p>
+              <p className="text-[13px] text-primary-custom">{new Date(user?.created_at || "").toLocaleDateString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={signOut}
+          className="w-full mt-6 border border-border bg-card text-secondary-custom h-10 rounded-xl text-[13px] font-medium hover:bg-background-secondary active:scale-[0.97] transition-all flex items-center justify-center gap-2"
+        >
+          <LogOut size={14} /> Sign Out
+        </button>
+      </div>
+    </MainLayout>
+  );
+}
