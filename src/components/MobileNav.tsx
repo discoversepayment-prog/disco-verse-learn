@@ -1,23 +1,31 @@
-import { MessageSquare, BookOpen, Clock, User } from "lucide-react";
+import { MessageSquare, BookOpen, Clock, User, Shield } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export function MobileNav() {
   const { mode, setMode } = useApp();
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const items = [
-    { icon: MessageSquare, label: "Chat", action: () => { setMode("chat"); navigate("/"); } },
-    { icon: BookOpen, label: "Learn", action: () => { setMode("learn"); navigate("/"); } },
+    { icon: MessageSquare, label: "Chat", action: () => { setMode("chat"); navigate("/app"); } },
+    { icon: BookOpen, label: "Learn", action: () => { setMode("learn"); navigate("/app"); } },
     { icon: Clock, label: "Library", action: () => navigate("/library") },
+    ...(isAdmin ? [{ icon: Shield, label: "Admin", action: () => navigate("/admin") }] : []),
     { icon: User, label: "Profile", action: () => navigate("/profile") },
   ];
 
-  const activeIndex =
-    location.pathname === "/profile" ? 3 :
-    location.pathname === "/library" ? 2 :
-    mode === "learn" && location.pathname === "/" ? 1 : 0;
+  const getActiveIndex = () => {
+    if (location.pathname === "/profile") return items.findIndex(i => i.label === "Profile");
+    if (location.pathname === "/library") return items.findIndex(i => i.label === "Library");
+    if (location.pathname.startsWith("/admin")) return items.findIndex(i => i.label === "Admin");
+    if (mode === "learn" && location.pathname === "/app") return 1;
+    return 0;
+  };
+
+  const activeIndex = getActiveIndex();
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-card/95 backdrop-blur-xl border-t border-border flex items-center justify-around z-50 safe-area-bottom">

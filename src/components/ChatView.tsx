@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, Send, Sparkles, Loader2, Trash2, Volume2, Square, ChevronDown, Search } from "lucide-react";
+import { Bot, Send, Sparkles, Loader2, Trash2, Volume2, Square, ChevronDown, Search, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { useTTS } from "@/hooks/useTTS";
 import ReactMarkdown from "react-markdown";
@@ -14,6 +16,7 @@ interface Agent {
   greeting_message: string;
   voice_id: string | null;
   knowledge_areas: string[];
+  created_by: string | null;
 }
 
 export function ChatView() {
@@ -23,16 +26,18 @@ export function ChatView() {
   const [showAgentList, setShowAgentList] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const { language } = useApp();
+  const { user } = useAuth();
   const { messages, isLoading, send, clear } = useStreamChat();
   const { speak, stop: stopTTS, isSpeaking } = useTTS();
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadAgents = async () => {
       const { data } = await supabase
         .from("ai_agents")
-        .select("id, name, slug, personality, greeting_message, voice_id, knowledge_areas")
+        .select("id, name, slug, personality, greeting_message, voice_id, knowledge_areas, created_by")
         .eq("is_published", true);
       if (data && data.length > 0) setAgents(data);
     };
@@ -84,7 +89,15 @@ export function ChatView() {
     return (
       <div className="flex flex-col h-full">
         <div className="px-4 pt-4 pb-2 shrink-0">
-          <h2 className="text-[18px] font-semibold text-primary-custom mb-1">AI Agents</h2>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-[18px] font-semibold text-primary-custom">AI Agents</h2>
+            <button
+              onClick={() => navigate("/create-agent")}
+              className="flex items-center gap-1 bg-accent text-accent-foreground px-3 py-1.5 rounded-lg text-[11px] font-medium hover:opacity-90 active:scale-[0.97] transition-all"
+            >
+              <Plus size={12} /> Create
+            </button>
+          </div>
           <p className="text-[12px] text-tertiary-custom mb-3">Specialized AI built by creators</p>
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-custom" />
@@ -102,7 +115,13 @@ export function ChatView() {
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
               <Bot size={36} strokeWidth={1} className="text-border mb-3" />
               <p className="text-[14px] text-secondary-custom">No agents available yet</p>
-              <p className="text-[12px] text-tertiary-custom mt-1">Admins can create agents from the admin panel</p>
+              <p className="text-[12px] text-tertiary-custom mt-1">Be the first to create one!</p>
+              <button
+                onClick={() => navigate("/create-agent")}
+                className="mt-4 flex items-center gap-1.5 bg-accent text-accent-foreground px-4 py-2 rounded-xl text-[12px] font-medium active:scale-[0.97]"
+              >
+                <Sparkles size={14} /> Create Agent
+              </button>
             </div>
           ) : (
             <div className="space-y-2.5 pt-2">
@@ -117,9 +136,14 @@ export function ChatView() {
                       <Bot size={20} className="text-accent" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-[14px] font-semibold text-primary-custom group-hover:text-accent transition-colors">
-                        {agent.name}
-                      </h3>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="text-[14px] font-semibold text-primary-custom group-hover:text-accent transition-colors truncate">
+                          {agent.name}
+                        </h3>
+                        {agent.created_by === user?.id && (
+                          <span className="text-[9px] bg-accent/10 text-accent px-1.5 py-0.5 rounded-full font-medium shrink-0">yours</span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-secondary-custom mt-0.5 line-clamp-2">{agent.personality}</p>
                       <div className="flex gap-1.5 mt-2 flex-wrap">
                         {(agent.knowledge_areas || []).slice(0, 3).map((area) => (
@@ -150,7 +174,7 @@ export function ChatView() {
         <div className="px-3 pt-2 pb-1.5 shrink-0">
           <button
             onClick={backToAgents}
-            className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2 w-full"
+            className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2 w-full active:scale-[0.98] transition-transform"
           >
             <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
               <Bot size={14} className="text-accent" />
@@ -183,7 +207,7 @@ export function ChatView() {
                   <button
                     key={q}
                     onClick={() => handleSend(q)}
-                    className="flex items-center gap-2 px-3.5 py-2.5 bg-card border border-border rounded-xl text-[12px] text-secondary-custom hover:border-accent hover:text-accent transition-all text-left"
+                    className="flex items-center gap-2 px-3.5 py-2.5 bg-card border border-border rounded-xl text-[12px] text-secondary-custom hover:border-accent hover:text-accent transition-all text-left active:scale-[0.97]"
                   >
                     <Sparkles size={12} className="shrink-0 text-accent" />
                     {q}
@@ -213,7 +237,7 @@ export function ChatView() {
                         {msg.content.length > 20 && (
                           <button
                             onClick={() => speakMessage(msg.content)}
-                            className="mt-2 flex items-center gap-1 text-[10px] text-tertiary-custom hover:text-accent transition-colors"
+                            className="mt-2 flex items-center gap-1 text-[10px] text-tertiary-custom hover:text-accent transition-colors active:scale-[0.95]"
                           >
                             {isSpeaking ? <Square size={10} /> : <Volume2 size={10} />}
                             {isSpeaking ? "Stop" : "Listen"}
@@ -256,7 +280,7 @@ export function ChatView() {
         <div className="max-w-[720px] mx-auto">
           {messages.length > 0 && (
             <div className="flex justify-center mb-1.5">
-              <button onClick={() => { clear(); backToAgents(); }} className="flex items-center gap-1 text-[10px] text-tertiary-custom hover:text-secondary-custom">
+              <button onClick={() => { clear(); backToAgents(); }} className="flex items-center gap-1 text-[10px] text-tertiary-custom hover:text-secondary-custom active:scale-[0.95]">
                 <Trash2 size={10} /> New Chat
               </button>
             </div>
