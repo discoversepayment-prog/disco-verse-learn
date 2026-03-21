@@ -1,4 +1,5 @@
-import { Compass, MessageSquare, BookOpen, Clock, Settings, User, LogOut, Shield } from "lucide-react";
+import { MessageSquare, BookOpen, Clock, User, LogOut, Shield } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -20,18 +21,14 @@ export function AppSidebar() {
 
   return (
     <aside className="hidden md:flex flex-col w-60 bg-background-secondary border-r border-border shrink-0 h-screen sticky top-0">
-      {/* Logo */}
       <div className="px-5 pt-6 pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-            <Compass className="text-accent" size={18} strokeWidth={1.5} />
-          </div>
+          <Logo size={28} />
           <span className="text-[17px] font-semibold text-primary-custom tracking-tight">Discoverse</span>
         </div>
         <p className="text-tertiary-custom text-xs mt-3 ml-0.5">Hello, {displayName.split(" ")[0]}</p>
       </div>
 
-      {/* Navigation */}
       <nav className="px-3 space-y-0.5">
         <SidebarItem icon={MessageSquare} label="Agents" active={mode === "chat" && !isAdminRoute && location.pathname === "/app"} onClick={() => handleNav("chat")} />
         <SidebarItem icon={BookOpen} label="Learn" active={mode === "learn" && !isAdminRoute && location.pathname === "/app"} onClick={() => handleNav("learn")} />
@@ -47,7 +44,6 @@ export function AppSidebar() {
         )}
       </nav>
 
-      {/* User */}
       <div className="mt-auto p-3">
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-border-subtle transition-colors">
           {avatarUrl ? (

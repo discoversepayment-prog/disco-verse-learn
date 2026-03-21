@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { Compass, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { Mail, Lock, User, ArrowRight } from "lucide-react";
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -54,21 +55,17 @@ export default function Auth() {
       <div className="hidden lg:flex lg:w-1/2 bg-background-secondary items-center justify-center p-16">
         <div className="max-w-md">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-              <Compass size={24} strokeWidth={1.5} className="text-accent" />
-            </div>
+            <Logo size={40} />
             <span className="text-2xl font-semibold text-primary-custom">Discoverse</span>
           </div>
           <h1 className="text-3xl font-semibold text-primary-custom leading-tight mb-4">
             Explore any topic in interactive 3D
           </h1>
           <p className="text-secondary-custom text-[15px] leading-relaxed">
-            AI-powered 3D learning that transforms complex science topics into 
-            step-by-step interactive simulations with natural voice narration 
-            in Hindi and English.
+            AI-powered 3D learning with specialized agents, step-by-step simulations, and natural voice narration.
           </p>
           <div className="mt-12 space-y-4">
-            {["Real 3D models from curated database", "AI-generated educational steps", "Natural voice narration in Hindi & English"].map((f) => (
+            {["Creator-built specialized AI agents", "Interactive 3D simulations", "Voice narration in Hindi & English"].map((f) => (
               <div key={f} className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
                   <ArrowRight size={12} strokeWidth={2} className="text-accent" />
@@ -83,9 +80,8 @@ export default function Auth() {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-sm">
-          {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Compass size={22} strokeWidth={1.5} className="text-accent" />
+            <Logo size={28} />
             <span className="text-lg font-semibold text-primary-custom">Discoverse</span>
           </div>
 
@@ -96,7 +92,6 @@ export default function Auth() {
             {isSignUp ? "Start exploring 3D learning" : "Sign in to continue learning"}
           </p>
 
-          {/* Google auth */}
           <button
             onClick={handleGoogleAuth}
             disabled={loading}
@@ -117,62 +112,37 @@ export default function Auth() {
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          {/* Email form */}
           <form onSubmit={handleEmailAuth} className="space-y-3">
             {isSignUp && (
               <div className="relative">
                 <User size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-custom" />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Full name"
-                  className="w-full h-11 bg-card border border-border rounded-lg pl-10 pr-4 text-sm text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-primary transition-colors"
-                />
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name"
+                  className="w-full h-11 bg-card border border-border rounded-lg pl-10 pr-4 text-sm text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-primary transition-colors" />
               </div>
             )}
             <div className="relative">
               <Mail size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-custom" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-                required
-                className="w-full h-11 bg-card border border-border rounded-lg pl-10 pr-4 text-sm text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-primary transition-colors"
-              />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" required
+                className="w-full h-11 bg-card border border-border rounded-lg pl-10 pr-4 text-sm text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-primary transition-colors" />
             </div>
             <div className="relative">
               <Lock size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-custom" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                required
-                minLength={6}
-                className="w-full h-11 bg-card border border-border rounded-lg pl-10 pr-4 text-sm text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-primary transition-colors"
-              />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required minLength={6}
+                className="w-full h-11 bg-card border border-border rounded-lg pl-10 pr-4 text-sm text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-primary transition-colors" />
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
             {message && <p className="text-sm text-accent">{message}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity active:scale-[0.97] disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading}
+              className="w-full h-11 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity active:scale-[0.97] disabled:opacity-50">
               {loading ? "Please wait..." : isSignUp ? "Create account" : "Sign in"}
             </button>
           </form>
 
           <p className="text-center text-sm text-secondary-custom mt-5">
             {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <button
-              onClick={() => { setIsSignUp(!isSignUp); setError(""); setMessage(""); }}
-              className="text-accent font-medium hover:underline"
-            >
+            <button onClick={() => { setIsSignUp(!isSignUp); setError(""); setMessage(""); }} className="text-accent font-medium hover:underline">
               {isSignUp ? "Sign in" : "Sign up"}
             </button>
           </p>
