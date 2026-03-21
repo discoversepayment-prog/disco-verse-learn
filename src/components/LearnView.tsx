@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Sparkles, ChevronLeft, ChevronRight, Play, Pause, Square,
   Volume2, VolumeX, Share2, RotateCcw, Atom, Loader2, Wand2,
-  ChevronDown, Eye,
+  Eye,
 } from "lucide-react";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { ModelViewer } from "./ModelViewer";
@@ -89,7 +89,7 @@ const normalizeSimulationData = (rawSimulation: unknown, availableParts: string[
   return {
     title: topicLabel,
     steps: [
-      { title: `${topicLabel}`, part: "", color: fallbackStepColors[0], narration_en: `This is ${topicLabel}. Tap play to hear each part explained.`, narration_hi: `Yo ${topicLabel} ho. Sunna play garnus.`, label_en: topicLabel, label_hi: topicLabel, camera: { x: 0, y: 0, z: 4 } },
+      { title: topicLabel, part: "", color: fallbackStepColors[0], narration_en: `This is ${topicLabel}. Tap play to hear each part explained.`, narration_hi: `Yo ${topicLabel} ho. Sunna play garnus.`, label_en: topicLabel, label_hi: topicLabel, camera: { x: 0, y: 0, z: 4 } },
       { title: "Key Parts", part: "", color: fallbackStepColors[1], narration_en: `${topicLabel} has several key components.`, narration_hi: `${topicLabel} ma kehi important bhag chan.`, label_en: "Parts", label_hi: "भाग", camera: { x: 2, y: 1, z: 3 } },
       { title: "Summary", part: "", color: fallbackStepColors[2], narration_en: `That's ${topicLabel}. Quick and clear.`, narration_hi: `Yo thiyo ${topicLabel}. Simple ra clear.`, label_en: "Summary", label_hi: "सारांश", camera: { x: 0, y: 0, z: 4 } },
     ],
@@ -115,7 +115,7 @@ export function LearnView() {
   const step = simulation?.steps[currentStep];
   const resolvedHighlightPart = step ? resolvePartName(step.part, modelParts) || undefined : undefined;
 
-  // Auto-play logic: wait for TTS to finish before advancing
+  // Auto-play logic
   useEffect(() => {
     if (!isAutoPlaying || !simulation) return;
     
@@ -124,10 +124,8 @@ export function LearnView() {
       speak(text, language);
     }
     
-    // If speaking, don't set timer — wait for speech to end
     if (isSpeaking) return;
     
-    // Only advance after a delay when not speaking (speech just ended or muted)
     autoPlayRef.current = setTimeout(() => {
       if (currentStep < simulation.steps.length - 1) {
         setCurrentStep((prev) => prev + 1);
@@ -247,7 +245,7 @@ export function LearnView() {
   // ── MOBILE-FIRST UI ──
   return (
     <div className="flex flex-col h-full relative">
-      {/* ── Search bar (always visible) ── */}
+      {/* Search bar */}
       <div className="px-3 pt-3 pb-2 flex gap-2 shrink-0">
         <div className="flex-1 relative">
           <Sparkles size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-accent" />
@@ -269,22 +267,22 @@ export function LearnView() {
         </button>
       </div>
 
-      {/* ── Topic chips ── */}
+      {/* Topic chips */}
       <div className="px-3 flex gap-1.5 overflow-x-auto pb-2 scrollbar-none shrink-0">
         {topicSuggestions.map((t) => (
           <button
             key={t}
             onClick={() => handleGenerate(t)}
             disabled={isLoading}
-            className="shrink-0 px-3 py-1.5 bg-card border border-border rounded-full text-[11px] text-secondary-custom hover:border-accent hover:text-accent transition-all disabled:opacity-40"
+            className="shrink-0 px-3 py-1.5 bg-card border border-border rounded-full text-[11px] text-secondary-custom hover:border-accent hover:text-accent transition-all disabled:opacity-40 active:scale-[0.97]"
           >
             {t}
           </button>
         ))}
       </div>
 
-      {/* ── 3D Canvas (takes remaining space) ── */}
-      <div className="flex-1 mx-3 mb-2 bg-canvas rounded-2xl border border-subtle overflow-hidden relative min-h-0">
+      {/* 3D Canvas */}
+      <div className="flex-1 mx-3 mb-1 bg-canvas rounded-2xl border border-subtle overflow-hidden relative min-h-0">
         {isLoading ? (
           <div className="h-full flex flex-col items-center justify-center gap-3 px-6">
             <div className="w-full max-w-[200px]">
@@ -317,7 +315,7 @@ export function LearnView() {
 
             {/* Canvas controls */}
             <div className="absolute top-2.5 right-2.5 flex gap-1">
-              <button className="w-8 h-8 bg-card/90 backdrop-blur-sm border border-border rounded-full flex items-center justify-center">
+              <button className="w-8 h-8 bg-card/90 backdrop-blur-sm border border-border rounded-full flex items-center justify-center active:scale-[0.95]">
                 <RotateCcw size={13} strokeWidth={1.5} className="text-secondary-custom" />
               </button>
             </div>
@@ -329,24 +327,24 @@ export function LearnView() {
         )}
       </div>
 
-      {/* ── Bottom Panel (step info + controls) ── */}
+      {/* Bottom Panel - fixed above mobile nav with proper spacing */}
       {simulation && !isLoading && (
-        <div className={`bg-card border-t border-subtle rounded-t-2xl transition-all duration-300 ${showPanel ? "max-h-[45vh]" : "max-h-[120px]"} flex flex-col shrink-0 overflow-hidden`}>
+        <div className={`bg-card border-t border-subtle rounded-t-2xl transition-all duration-300 ${showPanel ? "max-h-[40vh]" : "max-h-[100px]"} flex flex-col shrink-0 overflow-hidden mb-14 md:mb-0`}>
           {/* Panel handle */}
           <button
             onClick={() => setShowPanel(!showPanel)}
-            className="w-full flex items-center justify-center py-1.5 shrink-0"
+            className="w-full flex items-center justify-center py-1.5 shrink-0 active:bg-background-secondary"
           >
             <div className="w-8 h-1 bg-border rounded-full" />
           </button>
 
           {/* Step progress bar */}
-          <div className="px-3 pb-2 flex gap-1 shrink-0">
+          <div className="px-3 pb-1.5 flex gap-1 shrink-0">
             {simulation.steps.map((s, i) => (
               <button
                 key={i}
                 onClick={() => { stopTTS(); setCurrentStep(i); }}
-                className="flex-1 h-1 rounded-full transition-all duration-200"
+                className="flex-1 h-1.5 rounded-full transition-all duration-200 active:scale-y-150"
                 style={{
                   backgroundColor: i === currentStep
                     ? (s.color || "hsl(var(--accent))")
@@ -387,15 +385,15 @@ export function LearnView() {
             </div>
           )}
 
-          {/* Controls bar */}
-          <div className="px-3 py-2.5 flex items-center justify-between shrink-0 border-t border-subtle">
+          {/* Controls bar - always visible */}
+          <div className="px-3 py-2 flex items-center justify-between shrink-0 border-t border-subtle">
             {/* Language toggle */}
             <div className="flex rounded-full overflow-hidden border border-border h-7">
               {(["en", "hi"] as const).map((l) => (
                 <button
                   key={l}
                   onClick={() => { stopTTS(); setLanguage(l); }}
-                  className={`px-2.5 text-[10px] font-medium transition-colors ${
+                  className={`px-2.5 text-[10px] font-medium transition-colors active:scale-[0.95] ${
                     language === l ? "bg-accent text-accent-foreground" : "text-secondary-custom hover:bg-background-secondary"
                   }`}
                 >
@@ -405,36 +403,36 @@ export function LearnView() {
             </div>
 
             {/* Playback */}
-            <div className="flex items-center gap-2">
-              <button onClick={() => goStep(-1)} disabled={currentStep === 0} className="w-8 h-8 rounded-full border border-border flex items-center justify-center disabled:opacity-20">
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => goStep(-1)} disabled={currentStep === 0} className="w-8 h-8 rounded-full border border-border flex items-center justify-center disabled:opacity-20 active:scale-[0.95]">
                 <ChevronLeft size={14} strokeWidth={1.5} className="text-secondary-custom" />
               </button>
 
               <button
                 onClick={handlePlayNarration}
-                className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center active:scale-[0.95]"
               >
                 {isSpeaking ? <Square size={10} className="text-accent" /> : <Volume2 size={13} className="text-secondary-custom" />}
               </button>
 
               <button
                 onClick={handleAutoPlay}
-                className="w-11 h-11 rounded-full bg-accent flex items-center justify-center hover:opacity-90 active:scale-[0.95] transition-all shadow-md"
+                className="w-10 h-10 rounded-full bg-accent flex items-center justify-center hover:opacity-90 active:scale-[0.95] transition-all shadow-md"
               >
-                {isAutoPlaying ? <Pause size={16} className="text-accent-foreground" /> : <Play size={16} className="text-accent-foreground ml-0.5" />}
+                {isAutoPlaying ? <Pause size={14} className="text-accent-foreground" /> : <Play size={14} className="text-accent-foreground ml-0.5" />}
               </button>
 
-              <button onClick={() => goStep(1)} disabled={currentStep === (simulation?.steps.length ?? 0) - 1} className="w-8 h-8 rounded-full border border-border flex items-center justify-center disabled:opacity-20">
+              <button onClick={() => goStep(1)} disabled={currentStep === (simulation?.steps.length ?? 0) - 1} className="w-8 h-8 rounded-full border border-border flex items-center justify-center disabled:opacity-20 active:scale-[0.95]">
                 <ChevronRight size={14} strokeWidth={1.5} className="text-secondary-custom" />
               </button>
 
-              <button onClick={() => setIsMuted(!isMuted)} className="w-8 h-8 rounded-full border border-border flex items-center justify-center">
+              <button onClick={() => setIsMuted(!isMuted)} className="w-8 h-8 rounded-full border border-border flex items-center justify-center active:scale-[0.95]">
                 {isMuted ? <VolumeX size={13} className="text-tertiary-custom" /> : <Volume2 size={13} className="text-tertiary-custom" />}
               </button>
             </div>
 
             {/* Share */}
-            <button className="w-8 h-8 rounded-full border border-border flex items-center justify-center">
+            <button className="w-8 h-8 rounded-full border border-border flex items-center justify-center active:scale-[0.95]">
               <Share2 size={13} className="text-tertiary-custom" />
             </button>
           </div>

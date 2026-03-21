@@ -1,0 +1,217 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MainLayout } from "@/components/MainLayout";
+import { Bot, X, Save, Sparkles, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+
+export default function CreateAgent() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    slug: "",
+    personality: "warm, friendly guide who explains things like a close friend",
+    system_prompt: `You are a warm, experienced learning companion. Your style:
+- Talk like a close friend, not a teacher
+- Use simple language mixed with relevant technical terms
+- Be encouraging and supportive
+- Keep answers SHORT: 2-3 sentences max
+- Use analogies from daily life
+- Never sound like a generic chatbot
+- End with a follow-up question to keep them curious`,
+    greeting_message: "Hey! 👋 I'm here to help you learn. What topic are you curious about today?",
+    language_style: "mixed",
+    knowledge_areas: [] as string[],
+    research_papers: [] as string[],
+    voice_id: "EXAVITQu4vr4xnSDxMaL",
+  });
+  const [knowledgeInput, setKnowledgeInput] = useState("");
+  const [paperInput, setPaperInput] = useState("");
+
+  const update = (key: string, val: any) => setForm((prev) => ({ ...prev, [key]: val }));
+
+  const addKnowledge = () => {
+    if (!knowledgeInput.trim()) return;
+    update("knowledge_areas", [...form.knowledge_areas, knowledgeInput.trim()]);
+    setKnowledgeInput("");
+  };
+
+  const addPaper = () => {
+    if (!paperInput.trim()) return;
+    update("research_papers", [...form.research_papers, paperInput.trim()]);
+    setPaperInput("");
+  };
+
+  const handleSave = async (publish: boolean) => {
+    if (!form.name.trim() || !form.system_prompt.trim() || !user) return;
+    setSaving(true);
+    const slug = form.slug || form.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const { error } = await supabase.from("ai_agents").insert({
+      name: form.name,
+      slug,
+      personality: form.personality,
+      system_prompt: form.system_prompt,
+      greeting_message: form.greeting_message,
+      language_style: form.language_style,
+      knowledge_areas: form.knowledge_areas,
+      research_papers: form.research_papers,
+      voice_id: form.voice_id || null,
+      is_published: publish,
+      created_by: user.id,
+    });
+    setSaving(false);
+    if (error) {
+      alert("Failed to save: " + error.message);
+      return;
+    }
+    navigate("/app");
+  };
+
+  return (
+    <MainLayout title="Create Agent">
+      <div className="h-full overflow-y-auto pb-20 md:pb-8">
+        <div className="max-w-xl mx-auto px-4 py-4">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-[12px] text-secondary-custom hover:text-primary-custom mb-4">
+            <ArrowLeft size={14} /> Back
+          </button>
+
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center">
+              <Bot size={22} className="text-accent" />
+            </div>
+            <div>
+              <h1 className="text-[18px] font-semibold text-primary-custom">Create Your Agent</h1>
+              <p className="text-[12px] text-tertiary-custom">Build a specialized AI with your own personality & knowledge</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Field label="Agent Name" value={form.name} onChange={(v) => update("name", v)} placeholder="e.g. Physics Pro, Math Buddy" />
+
+            <Field label="Personality" value={form.personality} onChange={(v) => update("personality", v)} placeholder="warm, friendly guide who..." />
+
+            <div>
+              <label className="text-[12px] font-medium text-primary-custom block mb-1">System Prompt</label>
+              <textarea
+                value={form.system_prompt}
+                onChange={(e) => update("system_prompt", e.target.value)}
+                rows={6}
+                className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-[13px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent transition-colors resize-none"
+                placeholder="Define the agent's behavior, tone, and expertise..."
+              />
+              <p className="text-[10px] text-tertiary-custom mt-1">This is the core personality. Make it specific and warm.</p>
+            </div>
+
+            <div>
+              <label className="text-[12px] font-medium text-primary-custom block mb-1">Greeting Message</label>
+              <textarea
+                value={form.greeting_message}
+                onChange={(e) => update("greeting_message", e.target.value)}
+                rows={2}
+                className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-[13px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent transition-colors resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-[12px] font-medium text-primary-custom block mb-1">Language Style</label>
+              <select
+                value={form.language_style}
+                onChange={(e) => update("language_style", e.target.value)}
+                className="w-full bg-card border border-border rounded-xl h-10 px-3 text-[13px] text-primary-custom focus:outline-none focus:border-accent"
+              >
+                <option value="mixed">Mixed English + Romanized Nepali</option>
+                <option value="romanized_nepali">Romanized Nepali</option>
+                <option value="english">English</option>
+                <option value="hindi">Hindi (Devanagari)</option>
+              </select>
+            </div>
+
+            {/* Knowledge areas */}
+            <div>
+              <label className="text-[12px] font-medium text-primary-custom block mb-1">Knowledge Areas</label>
+              <div className="flex gap-1.5 flex-wrap mb-2">
+                {form.knowledge_areas.map((area, i) => (
+                  <span key={i} className="text-[11px] bg-accent/10 text-accent px-2.5 py-1 rounded-full flex items-center gap-1">
+                    {area}
+                    <button onClick={() => update("knowledge_areas", form.knowledge_areas.filter((_, j) => j !== i))}>
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={knowledgeInput}
+                  onChange={(e) => setKnowledgeInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addKnowledge())}
+                  placeholder="e.g. Biology, Physics..."
+                  className="flex-1 bg-card border border-border rounded-xl h-9 px-3 text-[12px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent"
+                />
+                <button onClick={addKnowledge} className="px-3 bg-background-secondary rounded-xl text-[12px] text-secondary-custom hover:text-primary-custom">Add</button>
+              </div>
+            </div>
+
+            {/* Research papers */}
+            <div>
+              <label className="text-[12px] font-medium text-primary-custom block mb-1">Research Papers / References</label>
+              <div className="space-y-1 mb-2">
+                {form.research_papers.map((paper, i) => (
+                  <div key={i} className="text-[11px] bg-card border border-border px-3 py-1.5 rounded-lg flex items-center justify-between">
+                    <span className="text-secondary-custom truncate">{paper}</span>
+                    <button onClick={() => update("research_papers", form.research_papers.filter((_, j) => j !== i))}>
+                      <X size={10} className="text-tertiary-custom" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={paperInput}
+                  onChange={(e) => setPaperInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPaper())}
+                  placeholder="Paste paper URL or title..."
+                  className="flex-1 bg-card border border-border rounded-xl h-9 px-3 text-[12px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent"
+                />
+                <button onClick={addPaper} className="px-3 bg-background-secondary rounded-xl text-[12px] text-secondary-custom hover:text-primary-custom">Add</button>
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 pt-3 pb-4">
+              <button
+                onClick={() => handleSave(false)}
+                disabled={!form.name || !form.system_prompt || saving}
+                className="flex-1 px-5 py-2.5 border border-border rounded-xl text-[13px] font-medium text-secondary-custom hover:bg-background-secondary disabled:opacity-40 flex items-center justify-center gap-1.5 active:scale-[0.97]"
+              >
+                <Save size={14} /> Save Draft
+              </button>
+              <button
+                onClick={() => handleSave(true)}
+                disabled={!form.name || !form.system_prompt || saving}
+                className="flex-1 px-5 py-2.5 bg-accent text-accent-foreground rounded-xl text-[13px] font-medium hover:opacity-90 active:scale-[0.97] disabled:opacity-40 flex items-center justify-center gap-1.5"
+              >
+                <Sparkles size={14} /> {saving ? "Publishing..." : "Publish"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </MainLayout>
+  );
+}
+
+function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <div>
+      <label className="text-[12px] font-medium text-primary-custom block mb-1">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-card border border-border rounded-xl h-10 px-3 text-[13px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent transition-colors"
+      />
+    </div>
+  );
+}
