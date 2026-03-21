@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, Send, Sparkles, Loader2, Trash2, Volume2, Square, ChevronDown } from "lucide-react";
+import { Bot, Send, Sparkles, Loader2, Trash2, Volume2, Square, ChevronDown, Search } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { useTTS } from "@/hooks/useTTS";
@@ -20,21 +20,21 @@ export function ChatView() {
   const [input, setInput] = useState("");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [showAgentPicker, setShowAgentPicker] = useState(false);
+  const [showAgentList, setShowAgentList] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const { language } = useApp();
   const { messages, isLoading, send, clear } = useStreamChat();
   const { speak, stop: stopTTS, isSpeaking } = useTTS();
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load published agents
   useEffect(() => {
     const loadAgents = async () => {
-      const { data } = await supabase.from("ai_agents").select("id, name, slug, personality, greeting_message, voice_id, knowledge_areas").eq("is_published", true);
-      if (data && data.length > 0) {
-        setAgents(data);
-        setSelectedAgent(data[0]);
-      }
+      const { data } = await supabase
+        .from("ai_agents")
+        .select("id, name, slug, personality, greeting_message, voice_id, knowledge_areas")
+        .eq("is_published", true);
+      if (data && data.length > 0) setAgents(data);
     };
     loadAgents();
   }, []);
@@ -50,6 +50,18 @@ export function ChatView() {
     }
   }, [input]);
 
+  const selectAgent = (agent: Agent) => {
+    setSelectedAgent(agent);
+    setShowAgentList(false);
+    clear();
+  };
+
+  const backToAgents = () => {
+    setSelectedAgent(null);
+    setShowAgentList(true);
+    clear();
+  };
+
   const handleSend = (text?: string) => {
     const msg = text || input.trim();
     if (!msg || isLoading) return;
@@ -62,8 +74,74 @@ export function ChatView() {
     speak(text, language);
   };
 
+  const filteredAgents = agents.filter(a =>
+    a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (a.knowledge_areas || []).some(k => k.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  // ── Agent List View ──
+  if (showAgentList && !selectedAgent) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="px-4 pt-4 pb-2 shrink-0">
+          <h2 className="text-[18px] font-semibold text-primary-custom mb-1">AI Agents</h2>
+          <p className="text-[12px] text-tertiary-custom mb-3">Specialized AI built by creators</p>
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-custom" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search agents..."
+              className="w-full bg-card border border-border rounded-xl h-9 pl-9 pr-3 text-[13px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-20 md:pb-4">
+          {agents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <Bot size={36} strokeWidth={1} className="text-border mb-3" />
+              <p className="text-[14px] text-secondary-custom">No agents available yet</p>
+              <p className="text-[12px] text-tertiary-custom mt-1">Admins can create agents from the admin panel</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5 pt-2">
+              {filteredAgents.map((agent) => (
+                <button
+                  key={agent.id}
+                  onClick={() => selectAgent(agent)}
+                  className="w-full bg-card border border-border rounded-2xl p-4 text-left hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                      <Bot size={20} className="text-accent" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[14px] font-semibold text-primary-custom group-hover:text-accent transition-colors">
+                        {agent.name}
+                      </h3>
+                      <p className="text-[11px] text-secondary-custom mt-0.5 line-clamp-2">{agent.personality}</p>
+                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                        {(agent.knowledge_areas || []).slice(0, 3).map((area) => (
+                          <span key={area} className="text-[10px] bg-background-secondary text-tertiary-custom px-2 py-0.5 rounded-full">
+                            {area}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Chat with Agent View ──
   const hasContent = input.trim().length > 0;
-  const greeting = selectedAgent?.greeting_message || "Namaste! 🙏 K sikna chahanchau aaja?";
+  const greeting = selectedAgent?.greeting_message || "Namaste! K sikna chahanchau?";
 
   return (
     <div className="flex flex-col h-full">
@@ -71,7 +149,7 @@ export function ChatView() {
       {selectedAgent && (
         <div className="px-3 pt-2 pb-1.5 shrink-0">
           <button
-            onClick={() => setShowAgentPicker(!showAgentPicker)}
+            onClick={backToAgents}
             className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2 w-full"
           >
             <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
@@ -81,26 +159,8 @@ export function ChatView() {
               <p className="text-[13px] font-medium text-primary-custom truncate">{selectedAgent.name}</p>
               <p className="text-[10px] text-tertiary-custom truncate">{selectedAgent.personality}</p>
             </div>
-            <ChevronDown size={14} className={`text-tertiary-custom transition-transform ${showAgentPicker ? "rotate-180" : ""}`} />
+            <ChevronDown size={14} className="text-tertiary-custom rotate-90" />
           </button>
-
-          {showAgentPicker && agents.length > 1 && (
-            <div className="mt-1 bg-card border border-border rounded-xl overflow-hidden shadow-lg animate-fade-in">
-              {agents.map((agent) => (
-                <button
-                  key={agent.id}
-                  onClick={() => { setSelectedAgent(agent); setShowAgentPicker(false); clear(); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-background-secondary transition-colors ${agent.id === selectedAgent.id ? "bg-accent/5" : ""}`}
-                >
-                  <Bot size={14} className="text-accent shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[12px] font-medium text-primary-custom">{agent.name}</p>
-                    <p className="text-[10px] text-tertiary-custom truncate">{agent.knowledge_areas?.join(", ") || "General"}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -118,15 +178,8 @@ export function ChatView() {
               <p className="text-[13px] text-secondary-custom leading-relaxed max-w-sm mb-6">
                 {greeting}
               </p>
-
-              {/* Quick prompts */}
               <div className="grid grid-cols-1 gap-2 w-full max-w-sm">
-                {[
-                  "Heart kasari kaam garcha?",
-                  "DNA structure explain gara",
-                  "Solar System ko bare ma batau",
-                  "Cell division k ho?",
-                ].map((q) => (
+                {["Explain photosynthesis", "DNA structure k ho?", "Solar System bare batau", "Quantum physics basics"].map((q) => (
                   <button
                     key={q}
                     onClick={() => handleSend(q)}
@@ -157,7 +210,6 @@ export function ChatView() {
                         <div className="prose prose-sm max-w-none text-[13px] text-primary-custom leading-relaxed prose-headings:text-primary-custom prose-strong:text-primary-custom prose-p:my-1 prose-ul:my-1 prose-li:my-0.5">
                           <ReactMarkdown>{msg.content}</ReactMarkdown>
                         </div>
-                        {/* TTS button */}
                         {msg.content.length > 20 && (
                           <button
                             onClick={() => speakMessage(msg.content)}
@@ -178,9 +230,17 @@ export function ChatView() {
                     <Bot size={12} className="text-accent" />
                   </div>
                   <div className="bg-card border border-border px-3.5 py-2.5 rounded-2xl rounded-bl-md">
-                    <div className="flex items-center gap-2">
-                      <Loader2 size={12} className="animate-spin text-accent" />
-                      <span className="text-[11px] text-tertiary-custom">Sochiracha...</span>
+                    <div className="flex items-center gap-1.5">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full bg-tertiary-custom"
+                          style={{
+                            animation: "pulse-dot 1.2s ease-in-out infinite",
+                            animationDelay: `${i * 200}ms`,
+                          }}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -192,12 +252,12 @@ export function ChatView() {
       </div>
 
       {/* Input */}
-      <div className="px-3 pb-3 pb-16 md:pb-3">
+      <div className="px-3 pb-16 md:pb-3">
         <div className="max-w-[720px] mx-auto">
           {messages.length > 0 && (
             <div className="flex justify-center mb-1.5">
-              <button onClick={clear} className="flex items-center gap-1 text-[10px] text-tertiary-custom hover:text-secondary-custom">
-                <Trash2 size={10} /> Clear
+              <button onClick={() => { clear(); backToAgents(); }} className="flex items-center gap-1 text-[10px] text-tertiary-custom hover:text-secondary-custom">
+                <Trash2 size={10} /> New Chat
               </button>
             </div>
           )}
@@ -214,7 +274,7 @@ export function ChatView() {
             <button
               onClick={() => handleSend()}
               disabled={!hasContent || isLoading}
-              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all active:scale-[0.95] ${
                 hasContent && !isLoading ? "bg-accent text-accent-foreground" : "bg-border text-tertiary-custom"
               }`}
             >

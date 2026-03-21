@@ -7,7 +7,7 @@ const Index = () => {
   const { mode } = useApp();
 
   return (
-    <MainLayout title={mode === "chat" ? "Chat" : "Learn"}>
+    <MainLayout title={mode === "chat" ? "Agents" : "Learn"}>
       <div className="h-full transition-opacity duration-300" key={mode}>
         {mode === "chat" ? <ChatView /> : <LearnView />}
       </div>
