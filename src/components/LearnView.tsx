@@ -228,6 +228,10 @@ export function LearnView() {
           setCurrentStep(0);
           setLoadingProgress(100);
           await supabase.from("simulation_cache").update({ serve_count: (cached.serve_count || 0) + 1 }).eq("id", cached.id);
+          // Auto-save to library
+          if (user && model?.id) {
+            supabase.from("user_library").upsert({ user_id: user.id, model_id: model.id, last_step: 0 }, { onConflict: "user_id,model_id" }).then(() => {});
+          }
           setTimeout(() => setIsLoading(false), 300);
           return;
         }
