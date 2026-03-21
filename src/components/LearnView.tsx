@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sparkles, ChevronLeft, ChevronRight, Play, Pause, Square,
   Volume2, VolumeX, Share2, RotateCcw, Atom, Loader2, Wand2,
@@ -106,6 +107,7 @@ const LOADING_MESSAGES = [
 ];
 
 export function LearnView() {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [simulation, setSimulation] = useState<Simulation | null>(null);
@@ -226,6 +228,10 @@ export function LearnView() {
           setCurrentStep(0);
           setLoadingProgress(100);
           await supabase.from("simulation_cache").update({ serve_count: (cached.serve_count || 0) + 1 }).eq("id", cached.id);
+          // Auto-save to library
+          if (user && model?.id) {
+            supabase.from("user_library").upsert({ user_id: user.id, model_id: model.id, last_step: 0 }, { onConflict: "user_id,model_id" }).then(() => {});
+          }
           setTimeout(() => setIsLoading(false), 300);
           return;
         }
@@ -243,6 +249,10 @@ export function LearnView() {
         const normalized = normalizeSimulationData(data, effectiveNamedParts, t);
         setSimulation(normalized);
         setCurrentStep(0);
+        // Auto-save to library
+        if (user && model?.id) {
+          supabase.from("user_library").upsert({ user_id: user.id, model_id: model.id, last_step: 0 }, { onConflict: "user_id,model_id" }).then(() => {});
+        }
         if (model?.id) {
           const { data: existingCache } = await supabase.from("simulation_cache").select("id").eq("model_id", model.id).eq("language", "en").maybeSingle();
           const normalizedJson = normalized as unknown as Json;
