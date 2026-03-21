@@ -12,7 +12,7 @@ export function AppSidebar() {
 
   const handleNav = (target: "chat" | "learn") => {
     setMode(target);
-    if (location.pathname !== "/") navigate("/");
+    if (location.pathname !== "/app") navigate("/app");
   };
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Explorer";
@@ -33,35 +33,16 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="px-3 space-y-0.5">
-        <SidebarItem
-          icon={MessageSquare}
-          label="Chat"
-          active={mode === "chat" && !isAdminRoute && location.pathname === "/"}
-          onClick={() => handleNav("chat")}
-        />
-        <SidebarItem
-          icon={BookOpen}
-          label="Learn"
-          active={mode === "learn" && !isAdminRoute && location.pathname === "/"}
-          onClick={() => handleNav("learn")}
-        />
-        <SidebarItem
-          icon={Clock}
-          label="Library"
-          active={location.pathname === "/library"}
-          onClick={() => navigate("/library")}
-        />
+        <SidebarItem icon={MessageSquare} label="Agents" active={mode === "chat" && !isAdminRoute && location.pathname === "/app"} onClick={() => handleNav("chat")} />
+        <SidebarItem icon={BookOpen} label="Learn" active={mode === "learn" && !isAdminRoute && location.pathname === "/app"} onClick={() => handleNav("learn")} />
+        <SidebarItem icon={Clock} label="Library" active={location.pathname === "/library"} onClick={() => navigate("/library")} />
+        <SidebarItem icon={User} label="Profile" active={location.pathname === "/profile"} onClick={() => navigate("/profile")} />
         {isAdmin && (
           <>
             <div className="pt-3 pb-1 px-3">
               <p className="label-text text-tertiary-custom">Admin</p>
             </div>
-            <SidebarItem
-              icon={Shield}
-              label="Admin Panel"
-              active={isAdminRoute}
-              onClick={() => navigate("/admin")}
-            />
+            <SidebarItem icon={Shield} label="Admin Panel" active={isAdminRoute} onClick={() => navigate("/admin")} />
           </>
         )}
       </nav>
@@ -98,7 +79,7 @@ function SidebarItem({ icon: Icon, label, active, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 ${
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 active:scale-[0.97] ${
         active
           ? "bg-accent-subtle text-accent font-medium border-l-2 border-accent -ml-px"
           : "text-secondary-custom hover:bg-border-subtle"
