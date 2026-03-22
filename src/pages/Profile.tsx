@@ -318,7 +318,7 @@ export default function Profile() {
               <div className="flex items-center gap-2">
                 <div className="flex-1 bg-background-secondary border border-border rounded-xl h-10 px-3 flex items-center">
                   <Link2 size={13} className="text-tertiary-custom mr-2 shrink-0" />
-                  <span className="text-[12px] text-secondary-custom truncate">discoverseai.com/u/{form.username}</span>
+                  <span className="text-[12px] text-muted-foreground truncate">{window.location.origin}/u/{form.username}</span>
                 </div>
                 <button onClick={() => copyLink(`discoverseai.com/u/${form.username}`)}
                   className="w-10 h-10 bg-card border border-border rounded-xl flex items-center justify-center hover:bg-background-secondary transition-colors shrink-0">
