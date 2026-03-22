@@ -250,7 +250,7 @@ export default function Profile() {
                     </div>
                     <div className="flex items-center gap-1">
                       {agent.is_published && (
-                        <button onClick={() => copyLink(`discoverseai.com/agent/${agent.slug}`)}
+                        <button onClick={() => copyLink(`/agent/${agent.slug}`)}
                           className="p-1.5 hover:bg-background-secondary rounded-lg transition-colors" title="Copy share link">
                           <ExternalLink size={12} className="text-tertiary-custom" />
                         </button>
