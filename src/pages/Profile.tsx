@@ -113,8 +113,8 @@ export default function Profile() {
     setSaving(false);
   };
 
-  const copyLink = (url: string) => {
-    navigator.clipboard.writeText(`https://${url}`);
+  const copyLink = (path: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}${path}`);
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
