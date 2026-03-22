@@ -184,28 +184,52 @@ export function LearnView() {
     setLoadingMsg(LOADING_MESSAGES[0]);
     setShowPanel(true);
 
+    // Fuzzy search: try exact slug, then keywords, then ilike on name/subject
     const slug = t.toLowerCase().replace(/\s+/g, "_");
-    const { data: model } = await supabase
+    const searchTerm = t.toLowerCase().trim();
+    const words = searchTerm.split(/\s+/).filter(Boolean);
+
+    let model: any = null;
+
+    // 1. Exact slug match
+    const { data: exactMatch } = await supabase
       .from("models").select("*")
-      .or(`slug.eq.${slug},keywords_en.cs.{${t.toLowerCase()}}`)
+      .eq("slug", slug)
       .eq("status", "published")
-      .order("viral_score", { ascending: false })
       .limit(1).maybeSingle();
+
+    if (exactMatch) {
+      model = exactMatch;
+    } else {
+      // 2. Keywords match
+      const { data: keywordMatch } = await supabase
+        .from("models").select("*")
+        .eq("status", "published")
+        .or(`keywords_en.cs.{${searchTerm}},keywords_hi.cs.{${searchTerm}},keywords_ne.cs.{${searchTerm}}`)
+        .order("viral_score", { ascending: false })
+        .limit(1).maybeSingle();
+
+      if (keywordMatch) {
+        model = keywordMatch;
+      } else {
+        // 3. Fuzzy name/subject search with ilike on each word
+        for (const word of words) {
+          if (word.length < 2) continue;
+          const pattern = `%${word}%`;
+          const { data: fuzzyMatch } = await supabase
+            .from("models").select("*")
+            .eq("status", "published")
+            .or(`name.ilike.${pattern},subject.ilike.${pattern},slug.ilike.${pattern}`)
+            .order("viral_score", { ascending: false })
+            .limit(1).maybeSingle();
+          if (fuzzyMatch) { model = fuzzyMatch; break; }
+        }
+      }
+    }
 
     setLoadingProgress(30);
     if (model?.file_url) { setModelUrl(model.file_url); }
-    else {
-      // No model in DB — generate an AI image as fallback visual
-      setModelUrl(null);
-      try {
-        const { data: imgData, error: imgErr } = await supabase.functions.invoke("generate-model-image", {
-          body: { topic: t },
-        });
-        if (!imgErr && imgData?.imageUrl) {
-          setModelUrl(imgData.imageUrl);
-        }
-      } catch { /* continue without image */ }
-    }
+    else { setModelUrl(null); }
 
     let effectiveNamedParts: string[] = model?.named_parts?.length ? model.named_parts : [];
     if (!effectiveNamedParts.length && model?.file_url?.toLowerCase().endsWith(".glb")) {
@@ -339,13 +363,7 @@ export function LearnView() {
           </div>
         ) : simulation ? (
           <>
-            {modelUrl?.startsWith("data:image") ? (
-              <div className="h-full flex items-center justify-center p-4 bg-gradient-to-b from-canvas to-background">
-                <img src={modelUrl} alt={simulation.title} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" />
-              </div>
-            ) : (
-              <ModelViewer modelUrl={modelUrl} highlightPart={resolvedHighlightPart} highlightColor={step?.color} onPartsLoaded={onPartsLoaded} />
-            )}
+            <ModelViewer modelUrl={modelUrl} highlightPart={resolvedHighlightPart} highlightColor={step?.color} onPartsLoaded={onPartsLoaded} />
 
             {/* Step indicator pill */}
             <div className="absolute top-2.5 left-2.5 bg-card/90 backdrop-blur-sm border border-border rounded-full px-2.5 py-1 flex items-center gap-1.5">
