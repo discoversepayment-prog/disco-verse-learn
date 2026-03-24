@@ -311,21 +311,21 @@ export function LearnView() {
       {/* Search bar */}
       <div className="px-3 pt-3 pb-2 flex gap-2 shrink-0">
         <div className="flex-1 relative">
-          <Sparkles size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-accent" />
+          <Sparkles size={12} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-custom" />
           <input
             value={topicInput}
             onChange={(e) => setTopicInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
             placeholder="Search any topic..."
-            className="w-full bg-card border border-border rounded-xl h-10 pl-9 pr-3 text-[14px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-accent transition-colors"
+            className="w-full bg-card border border-border rounded-lg h-9 pl-9 pr-3 text-[12px] text-primary-custom placeholder:text-tertiary-custom focus:outline-none focus:border-primary/30 transition-colors"
           />
         </div>
         <button
           onClick={() => handleGenerate()}
           disabled={isLoading || !topicInput.trim()}
-          className="bg-accent text-accent-foreground px-4 rounded-xl text-[13px] font-medium hover:opacity-90 transition-opacity active:scale-[0.97] disabled:opacity-40 flex items-center gap-1.5 shrink-0"
+          className="bg-primary text-primary-foreground px-4 rounded-lg text-[11px] font-bold hover:bg-primary/90 transition-all active:scale-[0.97] disabled:opacity-40 flex items-center gap-1.5 shrink-0"
         >
-          {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+          {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
           <span className="hidden sm:inline">Generate</span>
         </button>
       </div>
@@ -337,10 +337,11 @@ export function LearnView() {
             key={t}
             onClick={() => handleGenerate(t)}
             disabled={isLoading}
-            className="shrink-0 px-3 py-1.5 bg-card border border-border rounded-full text-[11px] text-secondary-custom hover:border-accent hover:text-accent transition-all disabled:opacity-40 active:scale-[0.97]"
+            className="shrink-0 px-3 py-1 bg-card border border-border rounded-md text-[10px] text-tertiary-custom hover:border-primary/20 hover:text-primary-custom transition-all disabled:opacity-40 active:scale-[0.97] font-medium"
           >
             {t}
           </button>
+        ))}
         ))}
       </div>
 
