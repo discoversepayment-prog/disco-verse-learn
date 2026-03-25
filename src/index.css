@@ -128,8 +128,69 @@
   50% { transform: translateY(-4px); }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: hsl(0, 0%, 14%); }
+  50% { border-color: hsl(0, 0%, 25%); }
+}
+
+@keyframes scale-up {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 .animate-fade-in {
   animation: fade-in 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-scale-up {
+  animation: scale-up 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slide-up {
+  animation: slide-up 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Hover lift */
+.hover-lift {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px hsla(0, 0%, 0%, 0.5);
+}
+
+/* Hover glow border */
+.hover-glow {
+  transition: border-color 300ms ease, box-shadow 300ms ease;
+}
+.hover-glow:hover {
+  border-color: hsl(0, 0%, 24%);
+  box-shadow: 0 0 20px -6px hsla(0, 0%, 100%, 0.06);
+}
+
+/* Button press */
+.press {
+  transition: transform 100ms ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Shimmer loading */
+.shimmer {
+  background: linear-gradient(90deg, hsl(var(--secondary)) 25%, hsl(0, 0%, 16%) 50%, hsl(var(--secondary)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease infinite;
 }
 
 /* Safe area for mobile bottom nav */
