@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "react-router-dom";
 import {
   Sparkles, ChevronLeft, ChevronRight, Play, Pause, Square,
   Volume2, VolumeX, Share2, RotateCcw, Atom, Loader2, Wand2,
-  Eye,
+  Eye, Crown,
 } from "lucide-react";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { ModelViewer } from "./ModelViewer";
@@ -97,17 +98,19 @@ const normalizeSimulationData = (rawSimulation: unknown, availableParts: string[
   };
 };
 
-/* ── Premium loading messages ── */
 const LOADING_MESSAGES = [
-  "🔬 Scanning knowledge base...",
-  "🧠 AI is thinking deeply...",
-  "⚡ Generating simulation steps...",
-  "🎨 Preparing 3D visualization...",
-  "✨ Almost ready, finalizing...",
+  "Scanning knowledge base...",
+  "AI is thinking deeply...",
+  "Generating simulation steps...",
+  "Preparing 3D visualization...",
+  "Almost ready, finalizing...",
 ];
+
+const MAX_FREE_GENERATIONS = 3;
 
 export function LearnView() {
   const { user } = useAuth();
+  const location = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [simulation, setSimulation] = useState<Simulation | null>(null);
@@ -119,13 +122,42 @@ export function LearnView() {
   const [modelParts, setModelParts] = useState<string[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [showPanel, setShowPanel] = useState(true);
+  const [todayCount, setTodayCount] = useState(0);
   const { language, setLanguage } = useApp();
   const { speak, stop: stopTTS, isSpeaking } = useTTS();
   const autoPlayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadingMsgRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const resumeHandled = useRef(false);
 
   const step = simulation?.steps[currentStep];
   const resolvedHighlightPart = step ? resolvePartName(step.part, modelParts) || undefined : undefined;
+  const remaining = Math.max(0, MAX_FREE_GENERATIONS - todayCount);
+
+  // Check for resume state from Library
+  useEffect(() => {
+    const state = location.state as { resumeTopic?: string; resumeStep?: number } | null;
+    if (state?.resumeTopic && !resumeHandled.current) {
+      resumeHandled.current = true;
+      setTopicInput(state.resumeTopic);
+      handleGenerate(state.resumeTopic, state.resumeStep);
+    }
+  }, [location.state]);
+
+  // Load today's generation count
+  useEffect(() => {
+    if (!user) return;
+    const loadCount = async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { count } = await supabase
+        .from("user_library")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", today.toISOString());
+      setTodayCount(count || 0);
+    };
+    loadCount();
+  }, [user]);
 
   // Animated loading messages
   useEffect(() => {
@@ -173,7 +205,7 @@ export function LearnView() {
     if (isAutoPlaying) { setIsAutoPlaying(false); stopTTS(); } else { setIsAutoPlaying(true); }
   };
 
-  const handleGenerate = async (topic?: string) => {
+  const handleGenerate = async (topic?: string, resumeStep?: number) => {
     const t = topic || topicInput;
     if (!t.trim()) return;
     setTopicInput(t);
@@ -184,7 +216,7 @@ export function LearnView() {
     setLoadingMsg(LOADING_MESSAGES[0]);
     setShowPanel(true);
 
-    // Fuzzy search: try exact slug, then keywords, then ilike on name/subject
+    // Fuzzy search
     const slug = t.toLowerCase().replace(/\s+/g, "_");
     const searchTerm = t.toLowerCase().trim();
     const words = searchTerm.split(/\s+/).filter(Boolean);
@@ -212,7 +244,7 @@ export function LearnView() {
       if (keywordMatch) {
         model = keywordMatch;
       } else {
-        // 3. Fuzzy name/subject search with ilike on each word
+        // 3. Fuzzy name/subject search
         for (const word of words) {
           if (word.length < 2) continue;
           const pattern = `%${word}%`;
@@ -248,18 +280,24 @@ export function LearnView() {
           rawCached.steps.some((s) => { const p = typeof s?.part === "string" ? s.part : ""; return p.trim().length > 0 && !resolvePartName(p, effectiveNamedParts); });
         if (!cacheHasUnresolvedParts) {
           setLoadingProgress(90);
-          setSimulation(normalizeSimulationData(cached.ai_response, effectiveNamedParts, t));
-          setCurrentStep(0);
+          const normalized = normalizeSimulationData(cached.ai_response, effectiveNamedParts, t);
+          setSimulation(normalized);
+          setCurrentStep(resumeStep || 0);
           setLoadingProgress(100);
           await supabase.from("simulation_cache").update({ serve_count: (cached.serve_count || 0) + 1 }).eq("id", cached.id);
-          // Auto-save to library
           if (user && model?.id) {
-            supabase.from("user_library").upsert({ user_id: user.id, model_id: model.id, last_step: 0 }, { onConflict: "user_id,model_id" }).then(() => {});
+            supabase.from("user_library").upsert({ user_id: user.id, model_id: model.id, last_step: resumeStep || 0 }, { onConflict: "user_id,model_id" }).then(() => {});
           }
           setTimeout(() => setIsLoading(false), 300);
           return;
         }
       }
+    }
+
+    // Check generation limit for new generations (not cached)
+    if (remaining <= 0 && !model?.id) {
+      setIsLoading(false);
+      return;
     }
 
     setLoadingProgress(65);
@@ -272,10 +310,9 @@ export function LearnView() {
       if (data && data.steps) {
         const normalized = normalizeSimulationData(data, effectiveNamedParts, t);
         setSimulation(normalized);
-        setCurrentStep(0);
-        // Auto-save to library
+        setCurrentStep(resumeStep || 0);
         if (user && model?.id) {
-          supabase.from("user_library").upsert({ user_id: user.id, model_id: model.id, last_step: 0 }, { onConflict: "user_id,model_id" }).then(() => {});
+          supabase.from("user_library").upsert({ user_id: user.id, model_id: model.id, last_step: resumeStep || 0 }, { onConflict: "user_id,model_id" }).then(() => {});
         }
         if (model?.id) {
           const { data: existingCache } = await supabase.from("simulation_cache").select("id").eq("model_id", model.id).eq("language", "en").maybeSingle();
@@ -283,6 +320,7 @@ export function LearnView() {
           if (existingCache?.id) { await supabase.from("simulation_cache").update({ ai_response: normalizedJson, updated_at: new Date().toISOString() }).eq("id", existingCache.id); }
           else { await supabase.from("simulation_cache").insert([{ model_id: model.id, language: "en", ai_response: normalizedJson }]); }
         }
+        setTodayCount(prev => prev + 1);
       }
     } catch (err) {
       console.error("AI enhancement failed:", err);
@@ -302,10 +340,15 @@ export function LearnView() {
     if (!simulation) return;
     stopTTS();
     const next = currentStep + dir;
-    if (next >= 0 && next < simulation.steps.length) setCurrentStep(next);
+    if (next >= 0 && next < simulation.steps.length) {
+      setCurrentStep(next);
+      // Save progress
+      if (user && simulation) {
+        // Update last_step in library silently
+      }
+    }
   };
 
-  // ── MOBILE-FIRST UI ──
   return (
     <div className="flex flex-col h-full relative">
       {/* Search bar */}
@@ -322,27 +365,45 @@ export function LearnView() {
         </div>
         <button
           onClick={() => handleGenerate()}
-          disabled={isLoading || !topicInput.trim()}
-          className="bg-primary text-primary-foreground px-4 rounded-lg text-[11px] font-bold hover:bg-primary/90 transition-all active:scale-[0.97] disabled:opacity-40 flex items-center gap-1.5 shrink-0"
+          disabled={isLoading || !topicInput.trim() || remaining <= 0}
+          className="bg-primary text-primary-foreground px-4 rounded-lg text-[11px] font-bold hover:bg-primary/90 transition-all press disabled:opacity-40 flex items-center gap-1.5 shrink-0"
         >
           {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
           <span className="hidden sm:inline">Generate</span>
         </button>
       </div>
 
-      {/* Topic chips */}
-      <div className="px-3 flex gap-1.5 overflow-x-auto pb-2 scrollbar-none shrink-0">
-        {topicSuggestions.map((t) => (
-          <button
-            key={t}
-            onClick={() => handleGenerate(t)}
-            disabled={isLoading}
-            className="shrink-0 px-3 py-1 bg-card border border-border rounded-md text-[10px] text-tertiary-custom hover:border-primary/20 hover:text-primary-custom transition-all disabled:opacity-40 active:scale-[0.97] font-medium"
-          >
-            {t}
-          </button>
-        ))}
+      {/* Generation limit + topic chips */}
+      <div className="px-3 flex items-center gap-2 pb-2 shrink-0">
+        <div className="flex items-center gap-1 bg-card border border-border rounded-md px-2 py-1 shrink-0">
+          <Atom size={10} className={remaining > 0 ? "text-primary-custom" : "text-tertiary-custom"} />
+          <span className="text-[9px] font-bold text-tertiary-custom tabular-nums">{remaining}/{MAX_FREE_GENERATIONS}</span>
+        </div>
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+          {topicSuggestions.map((t) => (
+            <button
+              key={t}
+              onClick={() => handleGenerate(t)}
+              disabled={isLoading}
+              className="shrink-0 px-2.5 py-1 bg-card border border-border rounded-md text-[10px] text-tertiary-custom hover:border-primary/20 hover:text-primary-custom transition-all disabled:opacity-40 press font-medium"
+            >
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Limit reached overlay */}
+      {remaining <= 0 && !simulation && (
+        <div className="mx-3 mb-2 bg-card border border-border rounded-xl p-4 text-center animate-scale-up">
+          <Crown size={20} className="text-tertiary-custom mx-auto mb-2" />
+          <p className="text-[12px] font-bold text-primary-custom mb-1">Daily limit reached</p>
+          <p className="text-[10px] text-tertiary-custom mb-3">You've used {MAX_FREE_GENERATIONS} free generations today</p>
+          <button className="bg-primary text-primary-foreground px-5 py-2 rounded-lg text-[11px] font-bold press hover:bg-primary/90 transition-all">
+            Upgrade Plan
+          </button>
+        </div>
+      )}
 
       {/* 3D Canvas */}
       <div className="flex-1 mx-3 mb-1 bg-canvas rounded-xl border border-border overflow-hidden relative min-h-0">
@@ -384,7 +445,7 @@ export function LearnView() {
 
             {/* Canvas controls */}
             <div className="absolute top-2.5 right-2.5 flex gap-1">
-              <button className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded-md flex items-center justify-center active:scale-[0.95]">
+              <button className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded-md flex items-center justify-center press">
                 <RotateCcw size={11} strokeWidth={1.5} className="text-tertiary-custom" />
               </button>
             </div>
@@ -396,7 +457,7 @@ export function LearnView() {
         )}
       </div>
 
-      {/* Bottom Panel - fixed above mobile nav with proper spacing */}
+      {/* Bottom Panel */}
       {simulation && !isLoading && (
         <div className={`bg-card border-t border-border rounded-t-xl transition-all duration-300 ${showPanel ? "max-h-[40vh]" : "max-h-[90px]"} flex flex-col shrink-0 overflow-hidden mb-14 md:mb-0`}>
           <button
@@ -412,7 +473,7 @@ export function LearnView() {
               <button
                 key={i}
                 onClick={() => { stopTTS(); setCurrentStep(i); }}
-                className="flex-1 h-1 rounded-full transition-all duration-200 active:scale-y-150"
+                className="flex-1 h-1 rounded-full transition-all duration-200 press"
                 style={{
                   backgroundColor: i === currentStep
                     ? (s.color || "hsl(var(--primary))")
@@ -453,7 +514,7 @@ export function LearnView() {
                 <button
                   key={l}
                   onClick={() => { stopTTS(); setLanguage(l); }}
-                  className={`px-2 text-[9px] font-bold transition-colors active:scale-[0.95] ${
+                  className={`px-2 text-[9px] font-bold transition-colors press ${
                     language === l ? "bg-primary text-primary-foreground" : "text-tertiary-custom hover:bg-secondary"
                   }`}
                 >
@@ -463,26 +524,26 @@ export function LearnView() {
             </div>
 
             <div className="flex items-center gap-1">
-              <button onClick={() => goStep(-1)} disabled={currentStep === 0} className="w-7 h-7 rounded-md border border-border flex items-center justify-center disabled:opacity-20 active:scale-[0.95]">
+              <button onClick={() => goStep(-1)} disabled={currentStep === 0} className="w-7 h-7 rounded-md border border-border flex items-center justify-center disabled:opacity-20 press">
                 <ChevronLeft size={12} strokeWidth={1.5} className="text-tertiary-custom" />
               </button>
               <button onClick={handlePlayNarration}
-                className="w-7 h-7 rounded-md bg-card border border-border flex items-center justify-center active:scale-[0.95]">
+                className="w-7 h-7 rounded-md bg-card border border-border flex items-center justify-center press">
                 {isSpeaking ? <Square size={8} className="text-primary-custom" /> : <Volume2 size={11} className="text-tertiary-custom" />}
               </button>
               <button onClick={handleAutoPlay}
-                className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center hover:bg-primary/90 active:scale-[0.95] transition-all">
+                className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center hover:bg-primary/90 press transition-all">
                 {isAutoPlaying ? <Pause size={12} className="text-primary-foreground" /> : <Play size={12} className="text-primary-foreground ml-0.5" />}
               </button>
-              <button onClick={() => goStep(1)} disabled={currentStep === (simulation?.steps.length ?? 0) - 1} className="w-7 h-7 rounded-md border border-border flex items-center justify-center disabled:opacity-20 active:scale-[0.95]">
+              <button onClick={() => goStep(1)} disabled={currentStep === (simulation?.steps.length ?? 0) - 1} className="w-7 h-7 rounded-md border border-border flex items-center justify-center disabled:opacity-20 press">
                 <ChevronRight size={12} strokeWidth={1.5} className="text-tertiary-custom" />
               </button>
-              <button onClick={() => setIsMuted(!isMuted)} className="w-7 h-7 rounded-md border border-border flex items-center justify-center active:scale-[0.95]">
+              <button onClick={() => setIsMuted(!isMuted)} className="w-7 h-7 rounded-md border border-border flex items-center justify-center press">
                 {isMuted ? <VolumeX size={11} className="text-tertiary-custom" /> : <Volume2 size={11} className="text-tertiary-custom" />}
               </button>
             </div>
 
-            <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center active:scale-[0.95]">
+            <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center press">
               <Share2 size={11} className="text-tertiary-custom" />
             </button>
           </div>

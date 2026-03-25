@@ -98,7 +98,7 @@ export function ChatView() {
             </div>
             <button
               onClick={() => navigate("/create-agent")}
-              className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-[11px] font-bold hover:bg-primary/90 active:scale-[0.97] transition-all"
+              className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-[11px] font-bold hover:bg-primary/90 press transition-all"
             >
               <Plus size={12} /> Create
             </button>
@@ -124,17 +124,21 @@ export function ChatView() {
               <p className="text-[10px] text-tertiary-custom mt-1">Be the first to create one!</p>
               <button
                 onClick={() => navigate("/create-agent")}
-                className="mt-4 flex items-center gap-1.5 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-[11px] font-bold active:scale-[0.97]"
+                className="mt-4 flex items-center gap-1.5 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-[11px] font-bold press"
               >
                 <Sparkles size={12} /> Create Agent
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 pt-2">
-              {filteredAgents.map((agent) => (
-                <div key={agent.id} className="bg-card border border-border rounded-xl p-3 hover:border-primary/20 transition-all duration-200 group flex flex-col">
+              {filteredAgents.map((agent, i) => (
+                <div
+                  key={agent.id}
+                  className="bg-card border border-border rounded-xl p-3 hover-lift hover-glow transition-all duration-200 group flex flex-col animate-slide-up"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                >
                   <button onClick={() => selectAgent(agent)} className="flex flex-col flex-1 text-left">
-                    <div className="w-11 h-11 rounded-lg bg-secondary flex items-center justify-center shrink-0 mb-2.5 overflow-hidden">
+                    <div className="w-11 h-11 rounded-lg bg-secondary flex items-center justify-center shrink-0 mb-2.5 overflow-hidden group-hover:scale-105 transition-transform duration-200">
                       {agent.avatar_url ? (
                         <img src={agent.avatar_url} alt={agent.name} className="w-full h-full object-cover rounded-lg" />
                       ) : (
@@ -152,7 +156,7 @@ export function ChatView() {
                     <p className="text-[10px] text-tertiary-custom line-clamp-2 leading-relaxed">{agent.personality}</p>
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); shareAgent(agent.slug); }}
-                    className="mt-2 pt-2 border-t border-border flex items-center justify-center gap-1.5 text-[9px] text-tertiary-custom hover:text-primary-custom transition-colors active:scale-95 uppercase tracking-wider font-medium">
+                    className="mt-2 pt-2 border-t border-border flex items-center justify-center gap-1.5 text-[9px] text-tertiary-custom hover:text-primary-custom transition-colors press uppercase tracking-wider font-medium">
                     <Share2 size={9} /> Share
                   </button>
                 </div>
@@ -176,7 +180,7 @@ export function ChatView() {
           <div className="flex items-center gap-2">
             <button
               onClick={backToAgents}
-              className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2 flex-1 active:scale-[0.98] transition-transform"
+              className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2 flex-1 press transition-transform hover-glow"
             >
               <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
                 {selectedAgent.avatar_url ? (
@@ -192,7 +196,7 @@ export function ChatView() {
               <ChevronDown size={12} className="text-tertiary-custom rotate-90" />
             </button>
             <button onClick={() => shareAgent(selectedAgent.slug)}
-              className="w-9 h-9 bg-card border border-border rounded-lg flex items-center justify-center hover:bg-secondary transition-colors shrink-0 active:scale-95">
+              className="w-9 h-9 bg-card border border-border rounded-lg flex items-center justify-center hover-glow shrink-0 press">
               <Share2 size={12} className="text-tertiary-custom" />
             </button>
           </div>
@@ -223,7 +227,7 @@ export function ChatView() {
                   <div className="space-y-1">
                     {pastConversations.slice(0, 3).map((conv) => (
                       <button key={conv.id} onClick={() => resumeConversation(conv)}
-                        className="w-full flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg text-left hover:border-primary/20 transition-all active:scale-[0.98]">
+                        className="w-full flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg text-left hover-glow transition-all press">
                         <div className="flex-1 min-w-0">
                           <p className="text-[11px] font-medium text-primary-custom truncate">{conv.title || "Chat"}</p>
                           <p className="text-[9px] text-tertiary-custom">{new Date(conv.updated_at).toLocaleDateString()}</p>
@@ -236,9 +240,10 @@ export function ChatView() {
               )}
 
               <div className="grid grid-cols-1 gap-1.5 w-full max-w-sm">
-                {["Explain photosynthesis", "DNA structure k ho?", "Solar System bare batau", "Quantum physics basics"].map((q) => (
+                {["Explain photosynthesis", "DNA structure k ho?", "Solar System bare batau", "Quantum physics basics"].map((q, i) => (
                   <button key={q} onClick={() => handleSend(q)}
-                    className="flex items-center gap-2 px-3.5 py-2.5 bg-card border border-border rounded-lg text-[11px] text-secondary-custom hover:border-primary/20 hover:text-primary-custom transition-all text-left active:scale-[0.98] group">
+                    className="flex items-center gap-2 px-3.5 py-2.5 bg-card border border-border rounded-lg text-[11px] text-secondary-custom hover-glow hover:text-primary-custom transition-all text-left press group animate-slide-up"
+                    style={{ animationDelay: `${i * 60}ms` }}>
                     <Sparkles size={10} className="shrink-0 text-tertiary-custom group-hover:text-primary-custom transition-colors" />
                     {q}
                   </button>
@@ -270,7 +275,7 @@ export function ChatView() {
                         </div>
                         {msg.content.length > 20 && (
                           <button onClick={() => speakMessage(msg.content)}
-                            className="mt-2 flex items-center gap-1 text-[9px] text-tertiary-custom hover:text-primary-custom transition-colors active:scale-[0.95] uppercase tracking-wider font-medium">
+                            className="mt-2 flex items-center gap-1 text-[9px] text-tertiary-custom hover:text-primary-custom transition-colors press uppercase tracking-wider font-medium">
                             {isSpeaking ? <Square size={8} /> : <Volume2 size={9} />}
                             {isSpeaking ? "Stop" : "Listen"}
                           </button>
@@ -306,12 +311,12 @@ export function ChatView() {
         <div className="max-w-[720px] mx-auto">
           {messages.length > 0 && (
             <div className="flex justify-center mb-1.5">
-              <button onClick={() => { clear(); backToAgents(); }} className="flex items-center gap-1 text-[9px] text-tertiary-custom hover:text-primary-custom active:scale-[0.95] transition-colors uppercase tracking-wider font-medium">
+              <button onClick={() => { clear(); backToAgents(); }} className="flex items-center gap-1 text-[9px] text-tertiary-custom hover:text-primary-custom press transition-colors uppercase tracking-wider font-medium">
                 <Trash2 size={9} /> New Chat
               </button>
             </div>
           )}
-          <div className="bg-card border border-border rounded-xl px-3 py-2 flex items-end gap-2">
+          <div className="bg-card border border-border rounded-xl px-3 py-2 flex items-end gap-2 hover-glow">
             <textarea
               ref={textareaRef}
               value={input}
@@ -324,7 +329,7 @@ export function ChatView() {
             <button
               onClick={() => handleSend()}
               disabled={!hasContent || isLoading}
-              className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all active:scale-[0.95] ${
+              className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all press ${
                 hasContent && !isLoading ? "bg-primary text-primary-foreground" : "bg-secondary text-tertiary-custom"
               }`}
             >

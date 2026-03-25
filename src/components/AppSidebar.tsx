@@ -73,7 +73,7 @@ function SidebarItem({ icon: Icon, label, active, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] transition-all duration-150 active:scale-[0.98] ${
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] transition-all duration-150 press ${
         active
           ? "bg-primary text-primary-foreground font-semibold"
           : "text-secondary-custom hover:bg-secondary/50 hover:text-primary-custom"
